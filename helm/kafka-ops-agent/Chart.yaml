@@ -1,0 +1,30 @@
+apiVersion: v2
+name: kafka-ops-agent
+description: A Helm chart for Kafka Operations Agent - Self-Service Kafka Platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+home: https://github.com/your-org/kafka-ops-agent
+sources:
+  - https://github.com/your-org/kafka-ops-agent
+maintainers:
+  - name: Kafka Ops Team
+    email: kafka-ops@example.com
+keywords:
+  - kafka
+  - operations
+  - self-service
+  - platform
+  - microservices
+annotations:
+  category: Infrastructure
+  licenses: MIT
+dependencies:
+  - name: postgresql
+    version: "12.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
+  - name: redis
+    version: "17.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: redis.enabled

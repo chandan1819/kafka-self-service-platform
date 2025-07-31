@@ -1,0 +1,151 @@
+version: '3.8'
+
+services:
+  # Kafka cluster for testing
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    hostname: zookeeper
+    container_name: test-zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    hostname: kafka
+    container_name: test-kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+      - "9101:9101"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # PostgreSQL for metadata storage
+  postgres:
+    image: postgres:15-alpine
+    container_name: test-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: kafka_ops_test
+      POSTGRES_USER: kafka_ops
+      POSTGRES_PASSWORD: test_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kafka_ops -d kafka_ops_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: test-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Kafka Ops Agent API Server
+  kafka-ops-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: test-kafka-ops-api
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+      - "8080:8080"  # Monitoring port
+    environment:
+      # Database configuration
+      DATABASE_URL: postgresql://kafka_ops:test_password@postgres:5432/kafka_ops_test
+      
+      # Kafka configuration
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      
+      # API configuration
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      
+      # Monitoring configuration
+      MONITORING_HOST: 0.0.0.0
+      MONITORING_PORT: 8080
+      
+      # Logging configuration
+      LOG_LEVEL: INFO
+      LOG_FORMAT: json
+      
+      # Test environment flag
+      TESTING: "true"
+    volumes:
+      - ./tests/integration/data:/app/test_data
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Test runner container
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: test-runner
+    depends_on:
+      kafka-ops-api:
+        condition: service_healthy
+    environment:
+      # Test configuration
+      TEST_API_URL: http://kafka-ops-api:8000
+      TEST_MONITORING_URL: http://kafka-ops-api:8080
+      TEST_KAFKA_SERVERS: kafka:29092
+      TEST_DATABASE_URL: postgresql://kafka_ops:test_password@postgres:5432/kafka_ops_test
+      
+      # Test execution settings
+      PYTEST_ARGS: "-v --tb=short"
+      TEST_TIMEOUT: 300
+    volumes:
+      - ./tests:/app/tests
+      - ./test-results:/app/test-results
+    command: ["python", "-m", "pytest", "tests/integration/", "-v", "--junitxml=/app/test-results/integration-tests.xml"]
+
+volumes:
+  postgres_data:
+
+networks:
+  default:
+    name: kafka-ops-test-network

@@ -1,0 +1,1 @@
+"""Kafka client management and connection pooling."""

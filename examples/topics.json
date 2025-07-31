@@ -1,0 +1,37 @@
+[
+  {
+    "name": "user-events",
+    "partitions": 6,
+    "replication_factor": 1,
+    "retention_ms": 604800000,
+    "cleanup_policy": "delete",
+    "compression_type": "snappy",
+    "custom_configs": {
+      "max.message.bytes": "2097152"
+    }
+  },
+  {
+    "name": "order-events",
+    "partitions": 12,
+    "replication_factor": 1,
+    "retention_ms": 2592000000,
+    "cleanup_policy": "delete",
+    "compression_type": "lz4",
+    "custom_configs": {
+      "max.message.bytes": "4194304",
+      "min.insync.replicas": "1"
+    }
+  },
+  {
+    "name": "user-profiles",
+    "partitions": 3,
+    "replication_factor": 1,
+    "retention_ms": -1,
+    "cleanup_policy": "compact",
+    "compression_type": "snappy",
+    "custom_configs": {
+      "segment.ms": "604800000",
+      "min.cleanable.dirty.ratio": "0.1"
+    }
+  }
+]

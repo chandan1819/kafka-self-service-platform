@@ -1,0 +1,1 @@
+"""Metadata storage and persistence layer."""

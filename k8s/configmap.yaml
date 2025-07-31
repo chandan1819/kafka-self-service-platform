@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-ops-config
+  namespace: kafka-ops
+  labels:
+    app.kubernetes.io/name: kafka-ops-agent
+    app.kubernetes.io/component: config
+data:
+  config.yaml: |
+    # Kafka Ops Agent Configuration
+    api:
+      host: "0.0.0.0"
+      port: 8000
+      workers: 4
+      timeout: 300
+      
+    monitoring:
+      host: "0.0.0.0"
+      port: 8080
+      enabled: true
+      
+    database:
+      url: "postgresql://kafka_ops:${DATABASE_PASSWORD}@postgres:5432/kafka_ops"
+      pool_size: 10
+      max_overflow: 20
+      
+    kafka:
+      bootstrap_servers: "kafka:9092"
+      security_protocol: "PLAINTEXT"
+      
+    logging:
+      level: "INFO"
+      format: "json"
+      
+    providers:
+      docker:
+        enabled: true
+        socket_path: "/var/run/docker.sock"
+        
+      kubernetes:
+        enabled: true
+        in_cluster: true
+        
+      terraform:
+        enabled: true
+        binary_path: "/usr/local/bin/terraform"
+        
+    features:
+      audit_logging: true
+      metrics_collection: true
+      health_checks: true
+      cleanup_scheduler: true
+      
+    security:
+      api_key_required: true
+      rate_limiting: true
+      cors_enabled: true
+      
+    cleanup:
+      default_retention_days: 7
+      orphaned_resource_check_interval: 3600
+      
+    alerts:
+      enabled: true
+      webhook_url: ""
+      
+  log4j2.xml: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <Configuration status="WARN">
+      <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+          <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+      </Appenders>
+      <Loggers>
+        <Root level="info">
+          <AppenderRef ref="Console"/>
+        </Root>
+      </Loggers>
+    </Configuration>

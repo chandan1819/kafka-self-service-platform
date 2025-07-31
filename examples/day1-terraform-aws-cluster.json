@@ -1,0 +1,54 @@
+{
+  "service_id": "kafka-cluster",
+  "plan_id": "terraform-aws-large",
+  "parameters": {
+    "cluster_name": "production-kafka-aws",
+    "cloud_provider": "aws",
+    "region": "us-west-2",
+    "availability_zones": ["us-west-2a", "us-west-2b", "us-west-2c"],
+    "instance_type": "m5.large",
+    "broker_count": 3,
+    "zookeeper_count": 3,
+    "storage_size": "100",
+    "storage_type": "gp3",
+    "storage_iops": "3000",
+    "vpc_cidr": "10.0.0.0/16",
+    "subnet_cidrs": {
+      "public": ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"],
+      "private": ["10.0.10.0/24", "10.0.20.0/24", "10.0.30.0/24"]
+    },
+    "enable_monitoring": true,
+    "enable_encryption": true,
+    "enable_backup": true,
+    "backup_retention_days": 7,
+    "kafka_config": {
+      "num.network.threads": "8",
+      "num.io.threads": "8",
+      "socket.send.buffer.bytes": "102400",
+      "socket.receive.buffer.bytes": "102400",
+      "socket.request.max.bytes": "104857600",
+      "log.retention.hours": "168",
+      "log.segment.bytes": "1073741824",
+      "log.retention.check.interval.ms": "300000",
+      "compression.type": "snappy",
+      "min.insync.replicas": "2",
+      "default.replication.factor": "3"
+    },
+    "security": {
+      "enable_ssl": true,
+      "enable_sasl": true,
+      "sasl_mechanism": "SCRAM-SHA-512"
+    },
+    "monitoring": {
+      "enable_cloudwatch": true,
+      "enable_prometheus": true,
+      "jmx_port": 9999
+    },
+    "tags": {
+      "Environment": "production",
+      "Team": "platform",
+      "Project": "kafka-platform",
+      "CostCenter": "engineering"
+    }
+  }
+}

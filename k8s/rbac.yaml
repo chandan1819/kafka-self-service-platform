@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kafka-ops-agent
+  namespace: kafka-ops
+  labels:
+    app.kubernetes.io/name: kafka-ops-agent
+    app.kubernetes.io/component: serviceaccount
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kafka-ops-agent
+  labels:
+    app.kubernetes.io/name: kafka-ops-agent
+    app.kubernetes.io/component: clusterrole
+rules:
+# Kubernetes provider permissions
+- apiGroups: [""]
+  resources: ["namespaces", "pods", "services", "configmaps", "secrets", "persistentvolumeclaims"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "statefulsets", "replicasets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses", "networkpolicies"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["storage.k8s.io"]
+  resources: ["storageclasses"]
+  verbs: ["get", "list", "watch"]
+# Helm/Custom Resource permissions
+- apiGroups: ["apiextensions.k8s.io"]
+  resources: ["customresourcedefinitions"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["helm.cattle.io"]
+  resources: ["helmcharts", "helmchartconfigs"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+# Monitoring permissions
+- apiGroups: ["monitoring.coreos.com"]
+  resources: ["servicemonitors", "prometheusrules"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+# Events for audit logging
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kafka-ops-agent
+  labels:
+    app.kubernetes.io/name: kafka-ops-agent
+    app.kubernetes.io/component: clusterrolebinding
+subjects:
+- kind: ServiceAccount
+  name: kafka-ops-agent
+  namespace: kafka-ops
+roleRef:
+  kind: ClusterRole
+  name: kafka-ops-agent
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kafka-ops-agent
+  namespace: kafka-ops
+  labels:
+    app.kubernetes.io/name: kafka-ops-agent
+    app.kubernetes.io/component: role
+rules:
+# Local namespace permissions
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kafka-ops-agent
+  namespace: kafka-ops
+  labels:
+    app.kubernetes.io/name: kafka-ops-agent
+    app.kubernetes.io/component: rolebinding
+subjects:
+- kind: ServiceAccount
+  name: kafka-ops-agent
+  namespace: kafka-ops
+roleRef:
+  kind: Role
+  name: kafka-ops-agent
+  apiGroup: rbac.authorization.k8s.io

@@ -1,0 +1,20 @@
+{
+  "service_id": "kafka-cluster",
+  "plan_id": "docker-small",
+  "parameters": {
+    "cluster_name": "my-first-kafka",
+    "broker_count": 1,
+    "zookeeper_count": 1,
+    "storage_size": "1Gi",
+    "network_name": "kafka-network",
+    "ports": {
+      "kafka": 9092,
+      "zookeeper": 2181
+    },
+    "environment": {
+      "KAFKA_AUTO_CREATE_TOPICS_ENABLE": "true",
+      "KAFKA_LOG_RETENTION_HOURS": "168",
+      "KAFKA_LOG_SEGMENT_BYTES": "1073741824"
+    }
+  }
+}
